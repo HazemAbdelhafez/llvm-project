@@ -713,6 +713,10 @@ LogicalResult Deserializer::processDecoration(ArrayRef<uint32_t> words) {
     }
     typeDecorations[words[0]] = words[2];
     break;
+  case spirv::Decoration::NoPerspective:
+  case spirv::Decoration::Flat:
+  case spirv::Decoration::NonWritable:
+  case spirv::Decoration::NonReadable:
   case spirv::Decoration::Block:
   case spirv::Decoration::BufferBlock:
     if (words.size() != 2) {
@@ -725,6 +729,7 @@ LogicalResult Deserializer::processDecoration(ArrayRef<uint32_t> words) {
     // it is needed for many validation rules.
     decorations[words[0]].set(symbol, opBuilder.getUnitAttr());
     break;
+  case spirv::Decoration::Location:
   case spirv::Decoration::SpecId:
     if (words.size() != 3) {
       return emitError(unknownLoc, "OpDecoration with ")
@@ -733,6 +738,7 @@ LogicalResult Deserializer::processDecoration(ArrayRef<uint32_t> words) {
     decorations[words[0]].set(
         symbol, opBuilder.getI32IntegerAttr(static_cast<int32_t>(words[2])));
     break;
+
   default:
     return emitError(unknownLoc, "unhandled Decoration : '") << decorationName;
   }
