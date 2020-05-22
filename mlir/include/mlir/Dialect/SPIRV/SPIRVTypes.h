@@ -13,6 +13,8 @@
 #ifndef MLIR_DIALECT_SPIRV_SPIRVTYPES_H_
 #define MLIR_DIALECT_SPIRV_SPIRVTYPES_H_
 
+#include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/Location.h"
 #include "mlir/IR/StandardTypes.h"
 #include "mlir/IR/TypeSupport.h"
 #include "mlir/IR/Types.h"
@@ -59,6 +61,7 @@ struct ImageTypeStorage;
 struct PointerTypeStorage;
 struct RuntimeArrayTypeStorage;
 struct StructTypeStorage;
+struct MatrixTypeStorage;
 } // namespace detail
 
 namespace TypeKind {
@@ -69,7 +72,8 @@ enum Kind {
   Pointer,
   RuntimeArray,
   Struct,
-  LAST_SPIRV_TYPE = Struct,
+  Matrix,
+  LAST_SPIRV_TYPE = Matrix,
 };
 }
 
@@ -359,6 +363,36 @@ public:
   unsigned getRows() const;
   /// return the number of columns of the matrix.
   unsigned getColumns() const;
+
+  void getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
+                     Optional<spirv::StorageClass> storage = llvm::None);
+  void getCapabilities(SPIRVType::CapabilityArrayRefVector &capabilities,
+                       Optional<spirv::StorageClass> storage = llvm::None);
+};
+
+// SPIR-V matrix type
+class MatrixType : public Type::TypeBase<MatrixType, CompositeType,
+                                         detail::MatrixTypeStorage> {
+public:
+  using Base::Base;
+
+  static bool kindof(unsigned kind) { return kind == TypeKind::Matrix; }
+
+  static MatrixType get(Type elementType, uint32_t numCols);
+
+  static MatrixType getChecked(Type elementType, uint32_t numCols,
+                               Location location);
+
+  static LogicalResult verifyConstructionInvariants(Location loc,
+                                                    Type elementType,
+                                                    uint32_t numCols);
+
+  /// Returns true if the matrix elements are vectors of float elements
+  static bool isValidElementType(Type elementType);
+
+  Type getElementType() const;
+
+  unsigned getNumElements() const;
 
   void getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
                      Optional<spirv::StorageClass> storage = llvm::None);

@@ -161,6 +161,7 @@ bool CompositeType::classof(Type type) {
   case TypeKind::CooperativeMatrix:
   case TypeKind::RuntimeArray:
   case TypeKind::Struct:
+  case TypeKind::Matrix:
     return true;
   case StandardTypes::Vector:
     return isValid(type.cast<VectorType>());
@@ -186,6 +187,8 @@ Type CompositeType::getElementType(unsigned index) const {
     return cast<StructType>().getElementType(index);
   case StandardTypes::Vector:
     return cast<VectorType>().getElementType();
+  case spirv::TypeKind::Matrix:
+    return cast<MatrixType>().getElementType();
   default:
     llvm_unreachable("invalid composite type");
   }
@@ -205,6 +208,8 @@ unsigned CompositeType::getNumElements() const {
     return cast<StructType>().getNumElements();
   case StandardTypes::Vector:
     return cast<VectorType>().getNumElements();
+  case spirv::TypeKind::Matrix:
+    return cast<MatrixType>().getNumElements();
   default:
     llvm_unreachable("invalid composite type");
   }
@@ -240,6 +245,9 @@ void CompositeType::getExtensions(
     cast<VectorType>().getElementType().cast<ScalarType>().getExtensions(
         extensions, storage);
     break;
+  case spirv::TypeKind::Matrix:
+    cast<MatrixType>().getExtensions(extensions, storage);
+    break;
   default:
     llvm_unreachable("invalid composite type");
   }
@@ -264,6 +272,9 @@ void CompositeType::getCapabilities(
   case StandardTypes::Vector:
     cast<VectorType>().getElementType().cast<ScalarType>().getCapabilities(
         capabilities, storage);
+    break;
+  case spirv::TypeKind::Matrix:
+    cast<MatrixType>().getCapabilities(capabilities, storage);
     break;
   default:
     llvm_unreachable("invalid composite type");
@@ -827,6 +838,8 @@ void SPIRVType::getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
     ptrType.getExtensions(extensions, storage);
   } else if (auto imageType = dyn_cast<ImageType>()) {
     imageType.getExtensions(extensions, storage);
+  } else if (auto matrixType = dyn_cast<MatrixType>()) {
+    matrixType.getExtensions(extensions, storage);
   } else {
     llvm_unreachable("invalid SPIR-V Type to getExtensions");
   }
@@ -843,6 +856,8 @@ void SPIRVType::getCapabilities(
     ptrType.getCapabilities(capabilities, storage);
   } else if (auto imageType = dyn_cast<ImageType>()) {
     imageType.getCapabilities(capabilities, storage);
+  } else if (auto matrixType = dyn_cast<MatrixType>()) {
+    matrixType.getCapabilities(capabilities, storage);
   } else {
     llvm_unreachable("invalid SPIR-V Type to getCapabilities");
   }
@@ -999,4 +1014,95 @@ void StructType::getCapabilities(
     Optional<StorageClass> storage) {
   for (Type elementType : getElementTypes())
     elementType.cast<SPIRVType>().getCapabilities(capabilities, storage);
+}
+
+//===----------------------------------------------------------------------===//
+// MatrixType
+//===----------------------------------------------------------------------===//
+
+struct spirv::detail::MatrixTypeStorage : public TypeStorage {
+  MatrixTypeStorage(Type elementTy, uint32_t numCols)
+      : TypeStorage(), elementType(elementTy), numCols(numCols) {}
+
+  Type elementType;
+
+  using KeyTy = std::tuple<Type, uint32_t>;
+
+  static MatrixTypeStorage *construct(TypeStorageAllocator &allocator,
+                                      const KeyTy &key) {
+
+    // Initialize the memory using placement new.
+    return new (allocator.allocate<MatrixTypeStorage>())
+        MatrixTypeStorage(std::get<0>(key), std::get<1>(key));
+  }
+
+  bool operator==(const KeyTy &key) const {
+    return key == KeyTy(elementType, getNumColumns());
+  }
+
+  uint32_t getNumColumns() const { return numCols; }
+
+  const uint32_t numCols;
+};
+
+MatrixType MatrixType::get(Type elementType, uint32_t numCols) {
+  return Base::get(elementType.getContext(), TypeKind::Matrix, elementType,
+                   numCols);
+}
+
+MatrixType MatrixType::getChecked(Type elementType, uint32_t numCols,
+                                  Location location) {
+  return Base::getChecked(location, TypeKind::Matrix, elementType, numCols);
+}
+
+LogicalResult MatrixType::verifyConstructionInvariants(Location loc,
+                                                       Type elementType,
+                                                       uint32_t numCols) {
+  if (numCols < 2 || numCols > 4)
+    return emitError(loc, "Matrix can have 2, 3, or 4 columns only.");
+
+  if (!isValidElementType(elementType))
+    return emitError(loc, "Matrix columns must be vectors of floats.");
+
+  /// The underlying vectors (columns) must be of size 2, 3, or 4
+  ArrayRef<int64_t> colShape = elementType.cast<VectorType>().getShape();
+  if (colShape.size() != 1)
+    return emitError(loc, "Matrix columns must be 1D vectors.");
+
+  if (colShape[0] < 2 || colShape[0] > 4)
+    return emitError(loc, "Matrix columns must be of size 2, 3, or 4.");
+
+  return success();
+}
+
+/// Returns true if the matrix elements are vectors of float elements
+bool MatrixType::isValidElementType(Type elementType) {
+  if (elementType.isa<VectorType>()) {
+    Type vectorElementsType =
+        elementType.dyn_cast<VectorType>().getElementType();
+    if (vectorElementsType.isa<FloatType>())
+      return true;
+  }
+  return false;
+}
+
+Type MatrixType::getElementType() const { return getImpl()->elementType; }
+
+unsigned MatrixType::getNumElements() const {
+  return getImpl()->getNumColumns();
+}
+
+void MatrixType::getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
+                               Optional<StorageClass> storage) {
+  getElementType().cast<SPIRVType>().getExtensions(extensions, storage);
+}
+
+void MatrixType::getCapabilities(
+    SPIRVType::CapabilityArrayRefVector &capabilities,
+    Optional<StorageClass> storage) {
+  // Add any capabilities associated with the underlying vectors (i.e., columns)
+  getElementType().cast<SPIRVType>().getCapabilities(capabilities, storage);
+
+  // Add the Matrix capability
+  capabilities.push_back(Capability::Matrix);
 }
