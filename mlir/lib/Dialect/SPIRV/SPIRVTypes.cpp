@@ -858,7 +858,7 @@ void SPIRVType::getCapabilities(
     matrixType.getCapabilities(capabilities, storage);
   } else if (auto ptrType = dyn_cast<PointerType>()) {
     ptrType.getCapabilities(capabilities, storage);
-  }  else {
+  } else {
     llvm_unreachable("invalid SPIR-V Type to getCapabilities");
   }
 }
@@ -1049,8 +1049,7 @@ MatrixType MatrixType::get(Type columnType, uint32_t columnCount) {
 
 MatrixType MatrixType::getChecked(Type columnType, uint32_t columnCount,
                                   Location location) {
-  return Base::getChecked(location, TypeKind::Matrix, columnType,
-                          columnCount);
+  return Base::getChecked(location, TypeKind::Matrix, columnType, columnCount);
 }
 
 LogicalResult MatrixType::verifyConstructionInvariants(Location loc,
@@ -1084,9 +1083,7 @@ bool MatrixType::isValidColumnType(Type columnType) {
 
 Type MatrixType::getElementType() const { return getImpl()->columnType; }
 
-unsigned MatrixType::getNumElements() const {
-  return getImpl()->columnCount;
-}
+unsigned MatrixType::getNumElements() const { return getImpl()->columnCount; }
 
 void MatrixType::getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
                                Optional<StorageClass> storage) {
