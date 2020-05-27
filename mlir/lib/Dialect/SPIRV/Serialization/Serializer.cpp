@@ -691,12 +691,12 @@ LogicalResult Serializer::processDecoration(Location loc, uint32_t resultID,
              << attrName << " attribute " << strAttr.getValue();
     }
     return emitError(loc, "expected string attribute for ") << attrName;
-  case spirv::Decoration::NoPerspective:
-  case spirv::Decoration::Flat:
-  case spirv::Decoration::NonWritable:
-  case spirv::Decoration::NonReadable:
   case spirv::Decoration::Block:
   case spirv::Decoration::BufferBlock:
+  case spirv::Decoration::Flat:
+  case spirv::Decoration::NonReadable:
+  case spirv::Decoration::NonWritable:
+  case spirv::Decoration::NoPerspective:
     if (auto unitAttr = attr.second.dyn_cast<UnitAttr>()) {
       // For unit attributes, the args list has no values so we do nothing
       break;

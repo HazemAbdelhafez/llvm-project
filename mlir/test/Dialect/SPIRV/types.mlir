@@ -367,22 +367,22 @@ func @matrix_type(!spv.matrix<4 x vector<4xf16>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix is expected to have 2, 3, or 4 columns.}}
+// expected-error @+1 {{matrix is expected to have 2, 3, or 4 columns}}
 func @matrix_invalid_size(!spv.matrix<5 x vector<3xf32>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix is expected to have 2, 3, or 4 columns.}}
+// expected-error @+1 {{matrix is expected to have 2, 3, or 4 columns}}
 func @matrix_invalid_size(!spv.matrix<1 x vector<3xf32>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix columns size has to be less than or equal to 4 and greater than or equal 2, but found 5}}
+// expected-error @+1 {{matrix columns size has to be less than or equal to 4 and greater than or equal 2, but found 5}}
 func @matrix_invalid_columns_size(!spv.matrix<3 x vector<5xf32>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix columns size has to be less than or equal to 4 and greater than or equal 2, but found 1}}
+// expected-error @+1 {{matrix columns size has to be less than or equal to 4 and greater than or equal 2, but found 1}}
 func @matrix_invalid_columns_size(!spv.matrix<3 x vector<1xf32>>) -> ()
 
 // -----
@@ -402,22 +402,22 @@ func @matrix_invalid_format(!spv.matrix<2 vector<3xi32>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix must be composed using vector type, got 'i32'}}
+// expected-error @+1 {{matrix must be composed using vector type, got 'i32'}}
 func @matrix_invalid_type(!spv.matrix< 3 x i32>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix must be composed using vector type, got '!spv.array<16 x f32>'}}
+// expected-error @+1 {{matrix must be composed using vector type, got '!spv.array<16 x f32>'}}
 func @matrix_invalid_type(!spv.matrix< 3 x !spv.array<16 x f32>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix must be composed using vector type, got '!spv.rtarray<i32>'}}
+// expected-error @+1 {{matrix must be composed using vector type, got '!spv.rtarray<i32>'}}
 func @matrix_invalid_type(!spv.matrix< 3 x !spv.rtarray<i32>>) -> ()
 
 // -----
 
-// expected-error @+1 {{Matrix columns' elements must be of Float type, got 'i32'}}
+// expected-error @+1 {{matrix columns' elements must be of Float type, got 'i32'}}
 func @matrix_invalid_type(!spv.matrix<2 x vector<3xi32>>) -> ()
 
 // -----

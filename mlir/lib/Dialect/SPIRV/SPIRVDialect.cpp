@@ -116,8 +116,8 @@ struct SPIRVInlinerInterface : public DialectInlinerInterface {
 
 SPIRVDialect::SPIRVDialect(MLIRContext *context)
     : Dialect(getDialectNamespace(), context) {
-  addTypes<ArrayType, CooperativeMatrixNVType, ImageType, PointerType,
-           RuntimeArrayType, StructType, MatrixType>();
+  addTypes<ArrayType, CooperativeMatrixNVType, ImageType, MatrixType,
+           PointerType, RuntimeArrayType, StructType>();
 
   addAttributes<InterfaceVarABIAttr, TargetEnvAttr, VerCapExtAttr>();
 
@@ -211,20 +211,20 @@ static Type parseAndVerifyMatrixType(SPIRVDialect const &dialect,
     }
     if (t.getNumElements() > 4 || t.getNumElements() < 2) {
       parser.emitError(typeLoc,
-                       "Matrix columns size has to be less than or equal "
+                       "matrix columns size has to be less than or equal "
                        "to 4 and greater than or equal 2, but found ")
           << t.getNumElements();
       return Type();
     }
 
     if (!t.getElementType().isa<FloatType>()) {
-      parser.emitError(typeLoc, "Matrix columns' elements must be of "
+      parser.emitError(typeLoc, "matrix columns' elements must be of "
                                 "Float type, got ")
           << t.getElementType();
       return Type();
     }
   } else {
-    parser.emitError(typeLoc, "Matrix must be composed using vector "
+    parser.emitError(typeLoc, "matrix must be composed using vector "
                               "type, got ")
         << type;
     return Type();
@@ -315,7 +315,7 @@ static Type parseCooperativeMatrixType(SPIRVDialect const &dialect,
     return Type();
 
   if (dims.size() != 2) {
-    parser.emitError(countLoc, "expected rows and columns size.");
+    parser.emitError(countLoc, "expected rows and columns size");
     return Type();
   }
 
@@ -402,22 +402,22 @@ static Type parseMatrixType(SPIRVDialect const &dialect,
     return Type();
   }
 
-  int64_t numCols = countDims[0];
+  int64_t columnCount = countDims[0];
   // According to the specification, Matrices can have 2, 3, or 4 columns
-  if (numCols < 2 || numCols > 4) {
-    parser.emitError(countLoc, "Matrix is expected to have 2, 3, or 4 "
-                               "columns.");
+  if (columnCount < 2 || columnCount > 4) {
+    parser.emitError(countLoc, "matrix is expected to have 2, 3, or 4 "
+                               "columns");
     return Type();
   }
 
-  Type elementType = parseAndVerifyMatrixType(dialect, parser);
-  if (!elementType)
+  Type columnType = parseAndVerifyMatrixType(dialect, parser);
+  if (!columnType)
     return Type();
 
   if (parser.parseGreater())
     return Type();
 
-  return MatrixType::get(elementType, numCols);
+  return MatrixType::get(columnType, columnCount);
 }
 
 // Specialize this function to parse each of the parameters that define an

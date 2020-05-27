@@ -58,10 +58,11 @@ namespace detail {
 struct ArrayTypeStorage;
 struct CooperativeMatrixTypeStorage;
 struct ImageTypeStorage;
+struct MatrixTypeStorage;
 struct PointerTypeStorage;
 struct RuntimeArrayTypeStorage;
 struct StructTypeStorage;
-struct MatrixTypeStorage;
+
 } // namespace detail
 
 namespace TypeKind {
@@ -69,11 +70,11 @@ enum Kind {
   Array = Type::FIRST_SPIRV_TYPE,
   CooperativeMatrix,
   Image,
+  Matrix,
   Pointer,
   RuntimeArray,
   Struct,
-  Matrix,
-  LAST_SPIRV_TYPE = Matrix,
+  LAST_SPIRV_TYPE = Struct,
 };
 }
 
@@ -378,17 +379,17 @@ public:
 
   static bool kindof(unsigned kind) { return kind == TypeKind::Matrix; }
 
-  static MatrixType get(Type elementType, uint32_t numCols);
+  static MatrixType get(Type columnType, uint32_t columnCount);
 
-  static MatrixType getChecked(Type elementType, uint32_t numCols,
+  static MatrixType getChecked(Type columnType, uint32_t columnCount,
                                Location location);
 
   static LogicalResult verifyConstructionInvariants(Location loc,
-                                                    Type elementType,
-                                                    uint32_t numCols);
+                                                    Type columnType,
+                                                    uint32_t columnCount);
 
   /// Returns true if the matrix elements are vectors of float elements
-  static bool isValidElementType(Type elementType);
+  static bool isValidColumnType(Type columnType);
 
   Type getElementType() const;
 
