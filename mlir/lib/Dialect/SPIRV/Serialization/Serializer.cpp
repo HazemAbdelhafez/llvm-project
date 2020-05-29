@@ -694,8 +694,8 @@ LogicalResult Serializer::processDecoration(Location loc, uint32_t resultID,
   case spirv::Decoration::Flat:
   case spirv::Decoration::NoPerspective:
     if (auto unitAttr = attr.second.dyn_cast<UnitAttr>()) {
-            // For unit attributes, the args list has no values so we do nothing
-           break;
+      // For unit attributes, the args list has no values so we do nothing
+      break;
     }
     return emitError(loc, "expected unit attribute for ") << attrName;
   default:
