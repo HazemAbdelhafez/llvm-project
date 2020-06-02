@@ -32,6 +32,7 @@ static constexpr const char kAlignmentAttrName[] = "alignment";
 static constexpr const char kBranchWeightAttrName[] = "branch_weights";
 static constexpr const char kCallee[] = "callee";
 static constexpr const char kClusterSize[] = "cluster_size";
+static constexpr const char kComponentsAttrName[] = "components";
 static constexpr const char kDefaultValueAttrName[] = "default_value";
 static constexpr const char kExecutionScopeAttrName[] = "execution_scope";
 static constexpr const char kEqualSemanticsAttrName[] = "equal_semantics";
@@ -1212,6 +1213,110 @@ static LogicalResult verify(spirv::CompositeExtractOp compExOp) {
            << resultType << " but provided " << compExOp.getType();
   }
 
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
+// spv.VectorShuffleOp
+//===----------------------------------------------------------------------===//
+
+static ParseResult parseVectorShuffleOp(OpAsmParser &parser,
+                                        OperationState &state) {
+  SmallVector<OpAsmParser::OperandType, 2> operands;
+  SmallVector<Type, 2> elementTypes;
+  Type type;
+  auto loc = parser.getCurrentLocation();
+  Attribute indicesAttr;
+
+  if (parser.parseOperandList(operands) ||
+      parser.parseAttribute(indicesAttr, kComponentsAttrName, state.attributes) ||
+      parser.parseColonType(type) ||
+      parser.parseComma() ||
+      parser.parseTypeList(elementTypes)) {
+    return failure();       
+  }
+      
+  auto resultType = type.dyn_cast<VectorType>();
+  if (!resultType) {
+    return parser.emitError(
+            loc, "result type must be a vector type, but provided ")
+            << type;
+  }
+  auto vec1Type = elementTypes[0].dyn_cast<VectorType>();
+  if (!vec1Type) {
+    return parser.emitError(
+            loc, "vector 1 type must be a vector type, but provided ")
+            << elementTypes[0];
+  }
+  auto vec2Type = elementTypes[1].dyn_cast<VectorType>();
+  if (!vec2Type) {
+    return parser.emitError(
+            loc, "vector 2 type must be a vector type, but provided ")
+            << elementTypes[1];
+  }
+
+  state.addTypes(type);
+  return parser.resolveOperands(operands, elementTypes, loc, state.operands);
+}
+
+static void print(spirv::VectorShuffleOp vectorShuffleOp,
+                  OpAsmPrinter &printer) {
+  printer << spirv::VectorShuffleOp::getOperationName() << " "
+  << vectorShuffleOp.vector1() << ", "
+  << vectorShuffleOp.vector2() << " "
+  << vectorShuffleOp.components() << " : "
+  << vectorShuffleOp.result().getType() << ", "
+  << vectorShuffleOp.vector1().getType() << ", "
+  << vectorShuffleOp.vector2().getType();
+}
+
+static LogicalResult verify(spirv::VectorShuffleOp vectorShuffleOp) {
+  auto resultType = vectorShuffleOp.result().getType().cast<VectorType>();
+  auto components = vectorShuffleOp.components();
+
+  // check that the number of components in the result vector is the same
+  // as the number of component operands
+  if ((int64_t)components.size() != resultType.getNumElements()) {
+    return vectorShuffleOp.emitError(
+      "number of components in result vector must be the same "
+      "as the number of component operands");
+  }
+
+  auto vec1Type = vectorShuffleOp.vector1().getType().cast<VectorType>();
+  auto vec2Type = vectorShuffleOp.vector2().getType().cast<VectorType>();
+
+  // check that the component type of vecftor 1 and 2 matches the
+  // component type of the result vector
+  if (vec1Type.getElementType() != vec2Type.getElementType()) {
+    return vectorShuffleOp.emitError(
+      "component type of vector 1 and 2 must be the same");
+  }
+  if (vec1Type.getElementType() != resultType.getElementType()) {
+    return vectorShuffleOp.emitError(
+      "component type of the result vector must be the same as "
+      "the component type of the operand vectors");
+  }
+
+  // check the range on the components literal
+  for (auto indexAttr : components) {
+    auto indexIntAttr = indexAttr.dyn_cast<IntegerAttr>();
+    if (!indexIntAttr) {
+      return vectorShuffleOp.emitError(
+        "expected a 32-bit integer for index, but found '")
+        << indexAttr << "'";
+    }
+
+    int64_t totalNumComponents = vec1Type.getNumElements() +
+                                 vec2Type.getNumElements();
+    int64_t index = indexIntAttr.getInt();
+    if (!(index >= 0 && index < totalNumComponents) &&
+        index != 0xffffffff) {
+      return vectorShuffleOp.emitError(
+        "each index must be 0xFFFFFFFF or be within the range "
+        "[0 - N-1] (inclusive) where N is the total number of "
+        "components of vector 1 and 2");
+    }
+  }
   return success();
 }
 
