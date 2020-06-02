@@ -11,4 +11,10 @@ spv.module Logical GLSL450 requires #spv.vce<v1.0, [Shader], []> {
     %0 = spv.CompositeConstruct %arg0, %arg1, %arg2 : vector<3xf32>
     spv.ReturnValue %0: vector<3xf32>
   }
+
+  spv.func @vector_shuffle(%arg0: vector<3xf32>, %arg1: vector<2xf32>) -> vector<3xf32> "None" {
+    // CHECK: spv.VectorShuffle {{%.*}}, {{%.*}} [2 : i32, 0 : i32, 4 : i32] : vector<3xf32>
+    %0 = spv.VectorShuffle %arg0, %arg1 [2 : i32, 0 : i32, 4 : i32] : vector<3xf32>, vector<3xf32>, vector<2xf32>
+    spv.ReturnValue %0: vector<3xf32>
+  }
 }

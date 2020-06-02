@@ -205,6 +205,58 @@ func @composite_extract_result_type_mismatch(%arg0: !spv.array<4xf32>) -> i32 {
 // -----
 
 //===----------------------------------------------------------------------===//
+// spv.VectorShuffle
+//===----------------------------------------------------------------------===//
+
+func @vector_shuffle(%arg0: vector<3xf32>, %arg1: vector<2xf32>) -> vector<3xf32> {
+  // CHECK: spv.VectorShuffle {{%.*}}, {{%.*}} [2 : i32, 0 : i32, 4 : i32] : vector<3xf32>
+  %0 = spv.VectorShuffle %arg0, %arg1 [2 : i32, 0 : i32, 4 : i32] : vector<3xf32>, vector<3xf32>, vector<2xf32>
+  return %0: vector<3xf32>
+}
+
+// -----
+
+func @vector_shuffle_repeated_indices(%arg0: vector<3xf32>, %arg1: vector<2xf32>) -> vector<4xf32> {
+  // CHECK: spv.VectorShuffle {{%.*}}, {{%.*}} [1 : i32, 1 : i32, 1 : i32, 0 : i32] : vector<4xf32>
+  %0 = spv.VectorShuffle %arg0, %arg1 [1 : i32, 1 : i32, 1 : i32, 0 : i32] : vector<4xf32>, vector<3xf32>, vector<2xf32>
+  return %0: vector<4xf32>
+}
+
+// -----
+
+func @vector_shuffle_index_out_of_bound(%arg0: vector<3xf32>, %arg1: vector<2xf32>) -> vector<3xf32> {
+  // expected-error @+1 {{each index must be 0xFFFFFFFF or be within the range [0 - N-1]}}
+  %0 = spv.VectorShuffle %arg0, %arg1 [2 : i32, 0 : i32, 5 : i32] : vector<3xf32>, vector<3xf32>, vector<2xf32>
+  return %0: vector<3xf32>
+}
+
+// -----
+
+func @vector_shuffle_mismatch_type(%arg0: vector<3xi32>, %arg1: vector<2xf32>) -> vector<3xf32> {
+  // expected-error @+1 {{component type of vector 1 and 2 must be the same}}
+  %0 = spv.VectorShuffle %arg0, %arg1 [2 : i32, 0 : i32, 4 : i32] : vector<3xf32>, vector<3xi32>, vector<2xf32>
+  return %0: vector<3xf32>
+}
+
+// -----
+
+func @vector_shuffle_mismatch_result_type(%arg0: vector<3xf32>, %arg1: vector<2xf32>) -> vector<3xi32> {
+  // expected-error @+1 {{component type of the result vector must be the same as the component type of the operand vectors}}
+  %0 = spv.VectorShuffle %arg0, %arg1 [2 : i32, 0 : i32, 4 : i32] : vector<3xi32>, vector<3xf32>, vector<2xf32>
+  return %0: vector<3xi32>
+}
+
+// -----
+
+func @vector_shuffle_incorrect_num_components(%arg0: vector<3xf32>, %arg1: vector<2xf32>) -> vector<2xf32> {
+  // expected-error @+1 {{number of components in result vector must be the same as the number of component operands}}
+  %0 = spv.VectorShuffle %arg0, %arg1 [2 : i32, 0 : i32, 4 : i32] : vector<2xf32>, vector<3xf32>, vector<2xf32>
+  return %0: vector<2xf32>
+}
+
+// -----
+
+//===----------------------------------------------------------------------===//
 // spv.CompositeInsert
 //===----------------------------------------------------------------------===//
 
