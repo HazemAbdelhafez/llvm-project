@@ -28,11 +28,11 @@ spv.module Logical GLSL450 requires #spv.vce<v1.0, [Shader], []> {
   // CHECK: !spv.ptr<!spv.image<i32, SubpassData, DepthUnknown, Arrayed, MultiSampled, NoSampler, Unknown>, UniformConstant>
   spv.globalVariable @var8 : !spv.ptr<!spv.image<i32, SubpassData, DepthUnknown, Arrayed, MultiSampled, NoSampler, Unknown>, UniformConstant>
 
-  // CHECK: !spv.ptr<!spv.image<i32, SubpassData, DepthUnknown, Arrayed, MultiSampled, NeedSampler, Unknown>, UniformConstant>
-  spv.globalVariable @var9 : !spv.ptr<!spv.image<i32, SubpassData, DepthUnknown, Arrayed, MultiSampled, NeedSampler, Unknown>, UniformConstant>
+  // CHECK: !spv.ptr<!spv.image<i32, Buffer, DepthUnknown, Arrayed, MultiSampled, NeedSampler, Unknown>, UniformConstant>
+  spv.globalVariable @var9 : !spv.ptr<!spv.image<i32, Buffer, DepthUnknown, Arrayed, MultiSampled, NeedSampler, Unknown>, UniformConstant>
 
-  // CHECK: !spv.ptr<!spv.image<i32, SubpassData, DepthUnknown, Arrayed, MultiSampled, SamplerUnknown, Unknown>, UniformConstant>
-  spv.globalVariable @var10 : !spv.ptr<!spv.image<i32, SubpassData, DepthUnknown, Arrayed, MultiSampled, SamplerUnknown, Unknown>, UniformConstant>
+  // CHECK: !spv.ptr<!spv.image<i32, Dim3D, DepthUnknown, Arrayed, MultiSampled, SamplerUnknown, Unknown>, UniformConstant>
+  spv.globalVariable @var10 : !spv.ptr<!spv.image<i32, Dim3D, DepthUnknown, Arrayed, MultiSampled, SamplerUnknown, Unknown>, UniformConstant>
 
   // CHECK: !spv.ptr<!spv.image<i32, Cube, DepthUnknown, Arrayed, MultiSampled, NoSampler, Rgb10A2>, UniformConstant>
   spv.globalVariable @var11 : !spv.ptr<!spv.image<i32, Cube, DepthUnknown, Arrayed, MultiSampled, NoSampler, Rgb10A2>, UniformConstant>
