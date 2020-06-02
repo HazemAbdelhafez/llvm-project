@@ -223,6 +223,8 @@ private:
 
   LogicalResult processImageType(ArrayRef<uint32_t> operands);
 
+  LogicalResult processSampledImageType(ArrayRef<uint32_t> operands);
+
   LogicalResult processRuntimeArrayType(ArrayRef<uint32_t> operands);
 
   LogicalResult processStructType(ArrayRef<uint32_t> operands);
@@ -1170,6 +1172,8 @@ LogicalResult Deserializer::processType(spirv::Opcode opcode,
     return processFunctionType(operands);
   case spirv::Opcode::OpTypeImage:
     return processImageType(operands);
+  case spirv::Opcode::OpTypeSampledImage:
+    return processSampledImageType(operands);
   case spirv::Opcode::OpTypeRuntimeArray:
     return processRuntimeArrayType(operands);
   case spirv::Opcode::OpTypeStruct:
@@ -1267,6 +1271,22 @@ LogicalResult Deserializer::processImageType(ArrayRef<uint32_t> operands) {
 
   typeMap[operands[0]] = spirv::ImageType::get(elementTy, dim.getValue(), depthInfo, arrayedInfo,
                                 samplingInfo, samplerUseInfo.getValue(), format.getValue());
+  return success();
+}
+
+LogicalResult Deserializer::processSampledImageType(ArrayRef<uint32_t> operands) {
+  assert(!operands.empty() && "No operands for processing sampled image type");
+  if (operands.size() != 2) {
+    return emitError(unknownLoc, "OpTypeSampledImage must have one parameter");
+  }
+
+  Type elementTy = getType(operands[1]);
+  if (!elementTy) {
+    return emitError(unknownLoc, "OpTypeSampledImage references undefined <id>")
+                << operands[1];
+  }
+
+  typeMap[operands[0]] = spirv::SampledImageType::get(elementTy);
   return success();
 }
 
@@ -2276,6 +2296,7 @@ LogicalResult Deserializer::processInstruction(spirv::Opcode opcode,
   case spirv::Opcode::OpTypeFloat:
   case spirv::Opcode::OpTypeVector:
   case spirv::Opcode::OpTypeImage:
+  case spirv::Opcode::OpTypeSampledImage:
   case spirv::Opcode::OpTypeArray:
   case spirv::Opcode::OpTypeFunction:
   case spirv::Opcode::OpTypeRuntimeArray:

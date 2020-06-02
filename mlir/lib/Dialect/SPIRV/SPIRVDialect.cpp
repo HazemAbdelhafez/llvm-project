@@ -117,7 +117,7 @@ struct SPIRVInlinerInterface : public DialectInlinerInterface {
 SPIRVDialect::SPIRVDialect(MLIRContext *context)
     : Dialect(getDialectNamespace(), context) {
   addTypes<ArrayType, CooperativeMatrixNVType, ImageType, PointerType,
-           RuntimeArrayType, StructType>();
+           RuntimeArrayType, SampledImageType, StructType>();
 
   addAttributes<InterfaceVarABIAttr, TargetEnvAttr, VerCapExtAttr>();
 
@@ -461,6 +461,25 @@ static Type parseImageType(SPIRVDialect const &dialect,
   return ImageType::get(value.getValue());
 }
 
+// sampledimage-type ::= `!spv.sampledimage<` image-type `>`
+static Type parseSampledImageType(SPIRVDialect const &dialect,
+                                  DialectAsmParser &parser) {
+  if (parser.parseLess()) {
+    return Type();
+  }
+
+  auto parseVal = parseAndVerify<Type>(dialect, parser);
+
+  if (!parseVal) {
+    return Type();
+  }
+
+  if (parser.parseGreater()) {
+    return Type();
+  }
+  return SampledImageType::get(parseVal.getValue());
+}
+
 // Parse decorations associated with a member.
 static ParseResult parseStructMemberDecorations(
     SPIRVDialect const &dialect, DialectAsmParser &parser,
@@ -549,6 +568,7 @@ static Type parseStructType(SPIRVDialect const &dialect,
 //              | image-type
 //              | pointer-type
 //              | runtime-array-type
+//              | sampledimage-type
 //              | struct-type
 Type SPIRVDialect::parseType(DialectAsmParser &parser) const {
   StringRef keyword;
@@ -565,6 +585,8 @@ Type SPIRVDialect::parseType(DialectAsmParser &parser) const {
     return parsePointerType(*this, parser);
   if (keyword == "rtarray")
     return parseRuntimeArrayType(*this, parser);
+  if (keyword == "sampledimage")
+    return parseSampledImageType(*this, parser);
   if (keyword == "struct")
     return parseStructType(*this, parser);
 
@@ -602,6 +624,10 @@ static void print(ImageType type, DialectAsmPrinter &os) {
      << stringifyImageSamplingInfo(type.getSamplingInfo()) << ", "
      << stringifyImageSamplerUseInfo(type.getSamplerUseInfo()) << ", "
      << stringifyImageFormat(type.getImageFormat()) << ">";
+}
+
+static void print(SampledImageType type, DialectAsmPrinter &os) {
+  os << "sampledimage<" << type.getImageType() << ">";
 }
 
 static void print(StructType type, DialectAsmPrinter &os) {
@@ -651,6 +677,9 @@ void SPIRVDialect::printType(Type type, DialectAsmPrinter &os) const {
     return;
   case TypeKind::Image:
     print(type.cast<ImageType>(), os);
+    return;
+  case TypeKind::SampledImage:
+    print(type.cast<SampledImageType>(), os);
     return;
   case TypeKind::Struct:
     print(type.cast<StructType>(), os);
