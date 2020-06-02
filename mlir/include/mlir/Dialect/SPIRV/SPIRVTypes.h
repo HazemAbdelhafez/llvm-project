@@ -58,6 +58,7 @@ struct CooperativeMatrixTypeStorage;
 struct ImageTypeStorage;
 struct PointerTypeStorage;
 struct RuntimeArrayTypeStorage;
+struct SampledImageTypeStorage;
 struct StructTypeStorage;
 } // namespace detail
 
@@ -68,6 +69,7 @@ enum Kind {
   Image,
   Pointer,
   RuntimeArray,
+  SampledImage,
   Struct,
   LAST_SPIRV_TYPE = Struct,
 };
@@ -212,6 +214,24 @@ public:
   ImageSamplerUseInfo getSamplerUseInfo() const;
   ImageFormat getImageFormat() const;
   // TODO(ravishankarm): Add support for Access qualifier
+
+  void getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
+                     Optional<spirv::StorageClass> storage = llvm::None);
+  void getCapabilities(SPIRVType::CapabilityArrayRefVector &capabilities,
+                       Optional<spirv::StorageClass> storage = llvm::None);
+};
+
+// SPIR-V sampled image type
+class SampledImageType
+    : public Type::TypeBase<SampledImageType, SPIRVType, detail::SampledImageTypeStorage> {
+public:
+  using Base::Base;
+
+  static bool kindof(unsigned kind) { return kind == TypeKind::SampledImage; }
+
+  static SampledImageType get(Type imageType);
+
+  Type getImageType() const;
 
   void getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
                      Optional<spirv::StorageClass> storage = llvm::None);

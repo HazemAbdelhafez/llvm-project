@@ -827,6 +827,8 @@ void SPIRVType::getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
     ptrType.getExtensions(extensions, storage);
   } else if (auto imageType = dyn_cast<ImageType>()) {
     imageType.getExtensions(extensions, storage);
+  } else if (auto sampledImageType = dyn_cast<SampledImageType>()) {
+    sampledImageType.getExtensions(extensions, storage);
   } else {
     llvm_unreachable("invalid SPIR-V Type to getExtensions");
   }
@@ -843,9 +845,49 @@ void SPIRVType::getCapabilities(
     ptrType.getCapabilities(capabilities, storage);
   } else if (auto imageType = dyn_cast<ImageType>()) {
     imageType.getCapabilities(capabilities, storage);
+  } else if (auto sampledImageType = dyn_cast<SampledImageType>()) {
+    sampledImageType.getCapabilities(capabilities, storage);
   } else {
     llvm_unreachable("invalid SPIR-V Type to getCapabilities");
   }
+}
+
+//===----------------------------------------------------------------------===//
+// SampledImageType
+//===----------------------------------------------------------------------===//
+
+struct spirv::detail::SampledImageTypeStorage : public TypeStorage {
+  using KeyTy = Type;
+
+  SampledImageTypeStorage(const KeyTy &key): imageType{key} {}
+
+  bool operator==(const KeyTy &key) const {
+    return key == KeyTy(imageType);
+  }
+
+  static SampledImageTypeStorage *construct(TypeStorageAllocator &allocator,
+                                            const KeyTy &key) {
+    return new (allocator.allocate<SampledImageTypeStorage>())
+              SampledImageTypeStorage(key);
+  }
+
+  Type imageType;
+};
+
+SampledImageType SampledImageType::get(Type imageType) {
+  return Base::get(imageType.getContext(), TypeKind::SampledImage, imageType);
+}
+
+Type SampledImageType::getImageType() const { return getImpl()->imageType;}
+
+void SampledImageType::getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
+                              Optional<StorageClass> storage) {
+  getImageType().cast<ImageType>().getExtensions(extensions, storage);
+}
+
+void SampledImageType::getCapabilities(SPIRVType::CapabilityArrayRefVector &capabilities,
+                                       Optional<StorageClass> storage) {
+  getImageType().cast<ImageType>().getCapabilities(capabilities, storage);
 }
 
 //===----------------------------------------------------------------------===//
