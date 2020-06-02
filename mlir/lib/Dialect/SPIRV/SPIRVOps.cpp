@@ -29,6 +29,7 @@ using namespace mlir;
 
 // TODO(antiagainst): generate these strings using ODS.
 static constexpr const char kAlignmentAttrName[] = "alignment";
+static constexpr const char kBiasAttrName[] = "bias";
 static constexpr const char kBranchWeightAttrName[] = "branch_weights";
 static constexpr const char kCallee[] = "callee";
 static constexpr const char kClusterSize[] = "cluster_size";
@@ -203,6 +204,50 @@ printMemoryAccessAttribute(LoadStoreOpTy loadStoreOp, OpAsmPrinter &printer,
   elidedAttrs.push_back(spirv::attributeName<spirv::StorageClass>());
 }
 
+static ParseResult parseImageOperandsAttributes(OpAsmParser &parser,
+                                             OperationState &state) {
+  // Parse an optional list of attributes starting with '['
+  if (parser.parseOptionalLSquare()) {
+    // Nothing to do
+    return success();
+  }
+
+  spirv::ImageOperands imageOperandsAttr;
+  if (parseEnumStrAttr(imageOperandsAttr, parser, state)) {
+    return failure();
+  }
+
+  if (spirv::bitEnumContains(imageOperandsAttr, spirv::ImageOperands::Bias)) {
+    // Parse integer attribute for bias
+    Attribute biasAttr;
+    Type i32Type = parser.getBuilder().getIntegerType(32);
+    if (parser.parseComma() ||
+        parser.parseAttribute(biasAttr, i32Type, kBiasAttrName,
+                              state.attributes)) {
+      return failure();
+    }
+  }
+  return parser.parseRSquare();
+}
+
+template <typename ImageOpTy>
+static void
+printImageOperandsAttribute(ImageOpTy imageOp, OpAsmPrinter &printer,
+                            SmallVectorImpl<StringRef> &elidedAttrs) {
+  // Print optional memory access attribute.
+  if (auto imgOperands = imageOp.image_operands()) {
+    elidedAttrs.push_back(spirv::attributeName<spirv::ImageOperands>());
+    printer << " [\"" << stringifyImageOperands(*imgOperands) << "\"";
+
+    // Print integer bias attribute.
+    if (auto bias = imageOp.bias()) {
+      elidedAttrs.push_back(kBiasAttrName);
+      printer << ", " << bias;
+    }
+    printer << "]";
+  }
+}
+
 static LogicalResult verifyCastOp(Operation *op,
                                   bool requireSameBitWidth = true) {
   Type operandType = op->getOperand(0).getType();
@@ -240,6 +285,67 @@ static LogicalResult verifyCastOp(Operation *op,
                "expected the different bit widths for operand type and result "
                "type, but provided ")
            << operandType << " and " << resultType;
+  }
+  return success();
+}
+
+template <typename ImageOpTy>
+static LogicalResult verifyImageOperandsAttribute(ImageOpTy imageOp) {
+  // ODS checks for attributes values. Just need to verify that if the
+  // memory-access attribute is Bias, then the Bias attribute must be
+  // present.
+  auto *op = imageOp.getOperation();
+  auto imageOperandsAttr = op->getAttr(spirv::attributeName<spirv::ImageOperands>());
+  if (!imageOperandsAttr) {
+    // Bias attribute shouldn't be present if image operands attribute is
+    // not present
+    if (op->getAttr(kBiasAttrName)) {
+      return imageOp.emitOpError(
+          "invalid bias specification without image operands "
+          "specification");
+    }
+    return success();
+  }
+
+  auto imageOperandsVal = imageOperandsAttr.template cast<IntegerAttr>();
+  auto imageOperands = spirv::symbolizeImageOperands(imageOperandsVal.getInt());
+
+  if (!imageOperands) {
+    return imageOp.emitOpError("invalid image operands specifier: ")
+           << imageOperandsVal;
+  }
+  if (*imageOperands == spirv::ImageOperands::None) {
+    return imageOp.emitOpError("invalid image operands value: None");
+  }
+  if (spirv::bitEnumContains(*imageOperands, spirv::ImageOperands::Bias)) {
+    if (!op->getAttr(kBiasAttrName)) {
+      return imageOp.emitOpError("missing bias value");
+    }
+    // Bias can only be used with Image that has Dim: 1D, 2D, 3D, Cube
+    // and MS: SingleSampled
+    auto sampledImageType = imageOp.sampled_image().getType().template 
+                                        cast<spirv::SampledImageType>();
+    auto imageType = sampledImageType.getImageType().template 
+                                        cast<spirv::ImageType>();
+    auto dimInfo = imageType.getDim();
+    if (dimInfo != spirv::Dim::Dim1D && dimInfo != spirv::Dim::Dim2D &&
+        dimInfo != spirv::Dim::Dim3D && dimInfo != spirv::Dim::Cube) {
+      return imageOp.emitOpError(
+          "the underlying image type must have Dim (1D, 2D, 3D, Cube) "
+          "when bias is specified");
+    }
+    auto samplingInfo = imageType.getSamplingInfo();
+    if (samplingInfo != spirv::ImageSamplingInfo::SingleSampled) {
+      return imageOp.emitOpError(
+          "the underlying image type must have SamplingInfo of SingleSampled "
+          "when bias is specified");
+    }
+  } else {
+    if (op->getAttr(kBiasAttrName)) {
+      return imageOp.emitOpError(
+          "invalid bias specification without bias image operands "
+          "specification" );
+    }
   }
   return success();
 }
@@ -1960,6 +2066,73 @@ static LogicalResult verify(spirv::GroupNonUniformElectOp groupOp) {
         "execution scope must be 'Workgroup' or 'Subgroup'");
 
   return success();
+}
+
+//===----------------------------------------------------------------------===//
+// spv.ImageSampleImplicitLodOp
+//===----------------------------------------------------------------------===//
+
+static ParseResult parseImageSampleImplicitLodOp(OpAsmParser &parser,
+                                                 OperationState &state) {
+  SmallVector<OpAsmParser::OperandType, 2> operands;
+  SmallVector<Type, 2> operandTypes;
+  Type type;
+  auto loc = parser.getCurrentLocation();
+
+  if (parser.parseOperandList(operands) ||
+      parseImageOperandsAttributes(parser, state) ||
+      parser.parseOptionalAttrDict(state.attributes) ||
+      parser.parseColonType(type) ||
+      parser.parseComma() ||
+      parser.parseTypeList(operandTypes)) {
+    return failure();
+  }
+
+  state.addTypes(type);
+  return parser.resolveOperands(operands, operandTypes, loc, state.operands);
+}
+
+static void print(spirv::ImageSampleImplicitLodOp imageSmpImplLodOp,
+                                     OpAsmPrinter &printer) {
+  auto *op = imageSmpImplLodOp.getOperation();
+  SmallVector<StringRef, 4> elidedAttrs;
+  printer << spirv::ImageSampleImplicitLodOp::getOperationName() << " "
+  << imageSmpImplLodOp.sampled_image() << ", "
+  << imageSmpImplLodOp.coordinate() << ", ";
+  printImageOperandsAttribute(imageSmpImplLodOp, printer, elidedAttrs);
+
+  printer.printOptionalAttrDict(op->getAttrs(), elidedAttrs);
+  printer << " : "
+  << imageSmpImplLodOp.result().getType() << ", "
+  << imageSmpImplLodOp.sampled_image().getType() << ", "
+  << imageSmpImplLodOp.coordinate().getType();
+}
+
+static LogicalResult verify(spirv::ImageSampleImplicitLodOp imageSmpImplLodOp) {
+  // check that the result type is a vector with four components
+  auto resultType = imageSmpImplLodOp.result().getType().cast<VectorType>();
+  auto componentType = resultType.getElementType();
+  if (resultType.getNumElements() != 4) {
+    return imageSmpImplLodOp.emitError(
+        "number of components in result vector must be four");
+  }
+
+  // check that the component type of the result vector is int or float,
+  // and it matches the sampled type of the underlying image type
+  auto sampledImageType = imageSmpImplLodOp.sampled_image().getType().cast<
+                                                  spirv::SampledImageType>();
+  auto sampledType = sampledImageType.getImageType().cast<spirv::ImageType>().getElementType();
+  if (!componentType.isIntOrFloat()) {
+    return imageSmpImplLodOp.emitError(
+        "component type of the result vector must be integer or float");
+  }
+  if (sampledType.isIntOrFloat() && sampledType != componentType) {
+    return imageSmpImplLodOp.emitError(
+      "component type of the result vector must match sampled type of the "
+      "underlying image type if it is not void");
+  }
+
+  return verifyImageOperandsAttribute(imageSmpImplLodOp);
 }
 
 //===----------------------------------------------------------------------===//
