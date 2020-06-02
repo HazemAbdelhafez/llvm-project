@@ -2632,6 +2632,74 @@ def SPV_ImageFormatAttr :
       SPV_IF_R8ui
     ]>;
 
+def SPV_IO_None               : BitEnumAttrCase<"None", 0x0000>;
+def SPV_IO_Bias               : BitEnumAttrCase<"Bias", 0x0001> {
+  list<Availability> availability = [
+    Capability<[SPV_C_Shader]>
+  ];
+}
+def SPV_IO_Lod                : BitEnumAttrCase<"Lod", 0x0002>;
+def SPV_IO_Grad               : BitEnumAttrCase<"Grad", 0x0004>;
+def SPV_IO_ConstOffset        : BitEnumAttrCase<"ConstOffset", 0x0008>;
+def SPV_IO_Offset             : BitEnumAttrCase<"Offset", 0x0010> {
+  list<Availability> availability = [
+    Capability<[SPV_C_ImageGatherExtended]>
+  ];
+}
+def SPV_IO_ConstOffsets       : BitEnumAttrCase<"ConstOffsets", 0x0020> {
+  list<Availability> availability = [
+    Capability<[SPV_C_ImageGatherExtended]>
+  ];
+}
+def SPV_IO_Sample             : BitEnumAttrCase<"Sample", 0x0040>;
+def SPV_IO_MinLod             : BitEnumAttrCase<"MinLod", 0x0080> {
+  list<Availability> availability = [
+    Capability<[SPV_C_MinLod]>
+  ];
+}
+def SPV_IO_MakeTexelAvailable : BitEnumAttrCase<"MakeTexelAvailable", 0x0100> {
+  list<Availability> availability = [
+    MinVersion<SPV_V_1_5>,
+    Capability<[SPV_C_VulkanMemoryModel]>
+  ];
+}
+def SPV_IO_MakeTexelVisible   : BitEnumAttrCase<"MakeTexelVisible", 0x0200> {
+  list<Availability> availability = [
+    MinVersion<SPV_V_1_5>,
+    Capability<[SPV_C_VulkanMemoryModel]>
+  ];
+}
+def SPV_IO_NonPrivateTexel    : BitEnumAttrCase<"NonPrivateTexel", 0x0400> {
+  list<Availability> availability = [
+    MinVersion<SPV_V_1_5>,
+    Capability<[SPV_C_VulkanMemoryModel]>
+  ];
+}
+def SPV_IO_VolatileTexel      : BitEnumAttrCase<"VolatileTexel", 0x0800> {
+  list<Availability> availability = [
+    MinVersion<SPV_V_1_5>,
+    Capability<[SPV_C_VulkanMemoryModel]>
+  ];
+}
+def SPV_IO_SignExtend         : BitEnumAttrCase<"SignExtend", 0x1000> {
+  list<Availability> availability = [
+    MinVersion<SPV_V_1_4>,
+  ];
+}
+def SPV_IO_ZeroExtend         : BitEnumAttrCase<"ZeroExtend", 0x2000> {
+  list<Availability> availability = [
+    MinVersion<SPV_V_1_4>,
+  ];
+}
+
+def SPV_ImageOperandsAttr :
+    SPV_BitEnumAttr<"ImageOperands", "valid SPIR-V ImageOperands", [
+      SPV_IO_None, SPV_IO_Bias, SPV_IO_Lod, SPV_IO_Grad, SPV_IO_ConstOffset,
+      SPV_IO_Offset, SPV_IO_ConstOffsets, SPV_IO_Sample, SPV_IO_MinLod,
+      SPV_IO_MakeTexelAvailable, SPV_IO_MakeTexelVisible, SPV_IO_NonPrivateTexel,
+      SPV_IO_VolatileTexel, SPV_IO_SignExtend, SPV_IO_ZeroExtend
+    ]>;
+
 def SPV_LT_Export : I32EnumAttrCase<"Export", 0> {
   list<Availability> availability = [
     Capability<[SPV_C_Linkage]>
@@ -2996,6 +3064,7 @@ def SPV_IsCooperativeMatrixType :
   CPred<"$_self.isa<::mlir::spirv::CooperativeMatrixNVType>()">;
 def SPV_IsPtrType : CPred<"$_self.isa<::mlir::spirv::PointerType>()">;
 def SPV_IsRTArrayType : CPred<"$_self.isa<::mlir::spirv::RuntimeArrayType>()">;
+def SPV_IsSampledImageType : CPred<"$_self.isa<::mlir::spirv::SampledImageType>()">;
 def SPV_IsStructType : CPred<"$_self.isa<::mlir::spirv::StructType>()">;
 
 // See https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#_types
@@ -3020,6 +3089,8 @@ def SPV_AnyCooperativeMatrix : DialectType<SPIRV_Dialect,
                                "any SPIR-V cooperative matrix type">;
 def SPV_AnyRTArray : DialectType<SPIRV_Dialect, SPV_IsRTArrayType,
                                  "any SPIR-V runtime array type">;
+def SPV_AnySampledImage : DialectType<SPIRV_Dialect, SPV_IsSampledImageType,
+                                "any SPIR-V sampled image type">;
 def SPV_AnyStruct : DialectType<SPIRV_Dialect, SPV_IsStructType,
                                 "any SPIR-V struct type">;
 
@@ -3031,8 +3102,8 @@ def SPV_Composite :
                SPV_AnyCooperativeMatrix]>;
 def SPV_Type : AnyTypeOf<[
     SPV_Void, SPV_Bool, SPV_Integer, SPV_Float, SPV_Vector,
-    SPV_AnyPtr, SPV_AnyArray, SPV_AnyRTArray, SPV_AnyStruct,
-    SPV_AnyCooperativeMatrix
+    SPV_AnyPtr, SPV_AnyArray, SPV_AnyRTArray, SPV_AnySampledImage,
+    SPV_AnyStruct, SPV_AnyCooperativeMatrix
   ]>;
 
 def SPV_SignlessOrUnsignedInt : SignlessOrUnsignedIntOfWidths<[8, 16, 32, 64]>;
@@ -3139,6 +3210,7 @@ def SPV_OC_OpVectorShuffle             : I32EnumAttrCase<"OpVectorShuffle", 79>;
 def SPV_OC_OpCompositeConstruct        : I32EnumAttrCase<"OpCompositeConstruct", 80>;
 def SPV_OC_OpCompositeExtract          : I32EnumAttrCase<"OpCompositeExtract", 81>;
 def SPV_OC_OpCompositeInsert           : I32EnumAttrCase<"OpCompositeInsert", 82>;
+def SPV_OC_OpImageSampleImplicitLod    : I32EnumAttrCase<"OpImageSampleImplicitLod", 87>;
 def SPV_OC_OpConvertFToU               : I32EnumAttrCase<"OpConvertFToU", 109>;
 def SPV_OC_OpConvertFToS               : I32EnumAttrCase<"OpConvertFToS", 110>;
 def SPV_OC_OpConvertSToF               : I32EnumAttrCase<"OpConvertSToF", 111>;
@@ -3263,12 +3335,13 @@ def SPV_OpcodeAttr :
       SPV_OC_OpFunctionEnd, SPV_OC_OpFunctionCall, SPV_OC_OpVariable, SPV_OC_OpLoad,
       SPV_OC_OpStore, SPV_OC_OpAccessChain, SPV_OC_OpDecorate,
       SPV_OC_OpMemberDecorate, SPV_OC_OpVectorShuffle, SPV_OC_OpCompositeConstruct,
-      SPV_OC_OpCompositeExtract, SPV_OC_OpCompositeInsert, SPV_OC_OpConvertFToU,
-      SPV_OC_OpConvertFToS, SPV_OC_OpConvertSToF, SPV_OC_OpConvertUToF,
-      SPV_OC_OpUConvert, SPV_OC_OpSConvert, SPV_OC_OpFConvert, SPV_OC_OpBitcast,
-      SPV_OC_OpFNegate, SPV_OC_OpIAdd, SPV_OC_OpFAdd, SPV_OC_OpISub, SPV_OC_OpFSub,
-      SPV_OC_OpIMul, SPV_OC_OpFMul, SPV_OC_OpUDiv, SPV_OC_OpSDiv, SPV_OC_OpFDiv,
-      SPV_OC_OpUMod, SPV_OC_OpSRem, SPV_OC_OpSMod, SPV_OC_OpFRem, SPV_OC_OpFMod,
+      SPV_OC_OpCompositeExtract, SPV_OC_OpCompositeInsert,
+      SPV_OC_OpImageSampleImplicitLod, SPV_OC_OpConvertFToU, SPV_OC_OpConvertFToS,
+      SPV_OC_OpConvertSToF, SPV_OC_OpConvertUToF, SPV_OC_OpUConvert,
+      SPV_OC_OpSConvert, SPV_OC_OpFConvert, SPV_OC_OpBitcast, SPV_OC_OpFNegate,
+      SPV_OC_OpIAdd, SPV_OC_OpFAdd, SPV_OC_OpISub, SPV_OC_OpFSub, SPV_OC_OpIMul,
+      SPV_OC_OpFMul, SPV_OC_OpUDiv, SPV_OC_OpSDiv, SPV_OC_OpFDiv, SPV_OC_OpUMod,
+      SPV_OC_OpSRem, SPV_OC_OpSMod, SPV_OC_OpFRem, SPV_OC_OpFMod,
       SPV_OC_OpLogicalEqual, SPV_OC_OpLogicalNotEqual, SPV_OC_OpLogicalOr,
       SPV_OC_OpLogicalAnd, SPV_OC_OpLogicalNot, SPV_OC_OpSelect, SPV_OC_OpIEqual,
       SPV_OC_OpINotEqual, SPV_OC_OpUGreaterThan, SPV_OC_OpSGreaterThan,
