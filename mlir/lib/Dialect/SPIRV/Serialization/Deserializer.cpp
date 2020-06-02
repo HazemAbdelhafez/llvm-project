@@ -221,6 +221,8 @@ private:
 
   LogicalResult processFunctionType(ArrayRef<uint32_t> operands);
 
+  LogicalResult processImageType(ArrayRef<uint32_t> operands);
+
   LogicalResult processRuntimeArrayType(ArrayRef<uint32_t> operands);
 
   LogicalResult processStructType(ArrayRef<uint32_t> operands);
@@ -1166,6 +1168,8 @@ LogicalResult Deserializer::processType(spirv::Opcode opcode,
     return processCooperativeMatrixType(operands);
   case spirv::Opcode::OpTypeFunction:
     return processFunctionType(operands);
+  case spirv::Opcode::OpTypeImage:
+    return processImageType(operands);
   case spirv::Opcode::OpTypeRuntimeArray:
     return processRuntimeArrayType(operands);
   case spirv::Opcode::OpTypeStruct:
@@ -1230,6 +1234,39 @@ LogicalResult Deserializer::processFunctionType(ArrayRef<uint32_t> operands) {
     returnTypes = llvm::makeArrayRef(returnType);
   }
   typeMap[operands[0]] = FunctionType::get(argTypes, returnTypes, context);
+  return success();
+}
+
+LogicalResult Deserializer::processImageType(ArrayRef<uint32_t> operands) {
+  // TODO add support for Access Qualifier; support variable num of operands
+  assert(!operands.empty() && "No operands for processing image type");
+  if (operands.size() != 8) {
+    return emitError(unknownLoc, "OpTypeImage must have seven parameters");
+  }
+
+  Type elementTy = getType(operands[1]);
+  if (!elementTy) {
+    return emitError(unknownLoc, "OpTypeImage references undefined <id> ")
+            << operands[1];
+  }
+
+  auto dim = spirv::symbolizeDim(operands[2]);
+  auto samplerUseInfo =  spirv::symbolizeImageSamplerUseInfo(operands[6]);
+  auto format = spirv::symbolizeImageFormat(operands[7]);
+  if (dim == spirv::Dim::SubpassData) {
+    if (samplerUseInfo != spirv::ImageSamplerUseInfo::NoSampler ||
+      format != spirv::ImageFormat::Unknown) {
+        return emitError(unknownLoc, "OpTypeImage with Dim: SubpassData must have"
+                "Sampled: NoSampler and ImageFormat: Unknown");
+    }
+  }
+
+  auto depthInfo = spirv::symbolizeImageDepthInfo(operands[3]).getValue();
+  auto arrayedInfo = spirv::symbolizeImageArrayedInfo(operands[4]).getValue();
+  auto samplingInfo = spirv::symbolizeImageSamplingInfo(operands[5]).getValue();
+
+  typeMap[operands[0]] = spirv::ImageType::get(elementTy, dim.getValue(), depthInfo, arrayedInfo,
+                                samplingInfo, samplerUseInfo.getValue(), format.getValue());
   return success();
 }
 
@@ -2238,6 +2275,7 @@ LogicalResult Deserializer::processInstruction(spirv::Opcode opcode,
   case spirv::Opcode::OpTypeInt:
   case spirv::Opcode::OpTypeFloat:
   case spirv::Opcode::OpTypeVector:
+  case spirv::Opcode::OpTypeImage:
   case spirv::Opcode::OpTypeArray:
   case spirv::Opcode::OpTypeFunction:
   case spirv::Opcode::OpTypeRuntimeArray:
