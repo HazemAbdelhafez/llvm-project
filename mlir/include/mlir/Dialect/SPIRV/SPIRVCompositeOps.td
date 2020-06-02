@@ -120,6 +120,64 @@ def SPV_CompositeExtractOp : SPV_Op<"CompositeExtract", [NoSideEffect]> {
 
 // -----
 
+def SPV_VectorShuffleOp : SPV_Op<"VectorShuffle", [NoSideEffect]> {
+  let summary = [{
+    Select arbitrary components from two vectors to make a new vector.
+  }];
+
+  let description = [{
+    Result Type must be an OpTypeVector. The number of components in Result
+    Type must be the same as the number of Component operands.
+
+    Vector 1 and Vector 2 must both have vector types, with the same
+    Component Type as Result Type. They do not have to have the same number
+    of components as Result Type or with each other. They are logically
+    concatenated, forming a single vector with Vector 1’s components
+    appearing before Vector 2’s. The components of this logical vector are
+    logically numbered with a single consecutive set of numbers from 0 to N
+    - 1, where N is the total number of components.
+
+    Components are these logical numbers (see above), selecting which of the
+    logically numbered components form the result. Each component is an
+    unsigned 32-bit integer.  They can select the components in any order
+    and can repeat components. The first component of the result is selected
+    by the first Component operand,  the second component of the result is
+    selected by the second Component operand, etc. A Component literal may
+    also be FFFFFFFF, which means the corresponding result component has no
+    source and is undefined. All Component literals must either be FFFFFFFF
+    or in [0, N - 1] (inclusive).
+
+    Note: A vector “swizzle” can be done by using the vector for both Vector
+    operands, or using an OpUndef for one of the Vector operands.
+
+    <!-- End of AutoGen section -->
+
+    ```
+    vector-shuffle-op ::= ssa-id `=` `spv.VectorShuffle` ssa-use, ssa-use
+                            `[` integer-literal (',' integer-literal)* `]`
+                            `:` `vector-type `,` vector-type `,` vector-type
+    ```
+
+    #### Example:
+
+    ```mlir
+    %0 = spv.VectorShuffle %vector1, %vector2 [1 : i32, 0 : i32, 1 : i32] : vector<3xf32>, vector<2xf32>, vector<3xf32>
+    ```
+  }];
+
+  let arguments = (ins
+    SPV_Vector:$vector1,
+    SPV_Vector:$vector2,
+    I32ArrayAttr:$components
+  );
+
+  let results = (outs
+    SPV_Vector:$result
+  );
+}
+
+// -----
+
 def SPV_CompositeInsertOp : SPV_Op<"CompositeInsert", [NoSideEffect]> {
   let summary = [{
     Make a copy of a composite object, while modifying one part of it.
