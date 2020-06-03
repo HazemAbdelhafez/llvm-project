@@ -632,4 +632,35 @@ def SPV_GLSLTanhOp : SPV_GLSLUnaryArithmeticOp<"Tanh", 21, SPV_Float16or32> {
   }];
 }
 
+// -----
+
+def SPV_GLSLPowOp : SPV_GLSLBinaryArithmeticOp<"Pow", 26, SPV_Float16or32> {
+  let summary = "Return operand raised to the power of another operand";
+
+  let description = [{
+    Result is x raised to the y power; x^y. Result is undefined if x < 0.
+    Result is undefined if x = 0 and y <= 0.
+
+    The operand x and y must be a scalar or vector whose component type
+    is 16-bit or 32-bit floating-point.
+
+    Result Type and the type of all operands must be the same type.
+    Results are computed per component.
+
+    <!-- End of AutoGen section -->
+    ```
+    float-scalar-vector-type ::= float-type |
+                                 `vector<` integer-literal `x` float-type `>`
+    pow-op ::= ssa-id `=` `spv.GLSL.Pow` ssa-use `:`
+                 float-scalar-vector-type
+    ```
+    #### Example:
+
+    ```mlir
+    %2 = spv.GLSL.Pow %0, %1 : f32
+    %3 = spv.GLSL.Pow %0, %1 : vector<3xf16>
+    ```
+  }];
+}
+
 #endif // SPIRV_GLSL_OPS
