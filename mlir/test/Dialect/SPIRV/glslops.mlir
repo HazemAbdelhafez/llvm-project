@@ -51,6 +51,32 @@ func @exp(%arg0 : i32) -> () {
 // -----
 
 //===----------------------------------------------------------------------===//
+// spv.GLSL.Pow
+//===----------------------------------------------------------------------===//
+
+func @pow(%arg0 : f32, %arg1 : f32) -> () {
+  // CHECK: spv.GLSL.Pow {{%.*}}, {{%.*}} : f32
+  %2 = spv.GLSL.Pow %arg0, %arg1 : f32
+  return
+}
+
+func @pow_vec(%arg0 : vector<3xf32>, %arg1 : vector<3xf32>) -> () {
+  // CHECK: spv.GLSL.Pow {{%.*}}, {{%.*}} : vector<3xf32>
+  %2 = spv.GLSL.Pow %arg0, %arg1 : vector<3xf32>
+  return
+}
+
+// -----
+
+func @pow64(%arg0 : f64, %arg1 : f64) -> () {
+  // expected-error @+1 {{op operand #0 must be 16/32-bit float or vector of 16/32-bit float values}}
+  %2 = spv.GLSL.Pow %arg0, %arg1 : f64
+  return
+}
+
+// -----
+
+//===----------------------------------------------------------------------===//
 // spv.GLSL.FMax
 //===----------------------------------------------------------------------===//
 
