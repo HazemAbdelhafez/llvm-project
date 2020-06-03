@@ -693,6 +693,7 @@ LogicalResult Deserializer::processDecoration(ArrayRef<uint32_t> words) {
   auto symbol = opBuilder.getIdentifier(attrName);
   switch (static_cast<spirv::Decoration>(words[1])) {
   case spirv::Decoration::DescriptorSet:
+  case spirv::Decoration::Location:
   case spirv::Decoration::Binding:
     if (words.size() != 3) {
       return emitError(unknownLoc, "OpDecorate with ")
@@ -727,6 +728,14 @@ LogicalResult Deserializer::processDecoration(ArrayRef<uint32_t> words) {
     // verification.
     // TODO: Update StructType to contain this information since
     // it is needed for many validation rules.
+    decorations[words[0]].set(symbol, opBuilder.getUnitAttr());
+    break;
+  case spirv::Decoration::NonReadable:
+  case spirv::Decoration::NonWritable:
+    if (words.size() != 2) {
+      return emitError(unknownLoc, "OpDecoration with ")
+             << decorationName << "needs a single target <id>";
+    }
     decorations[words[0]].set(symbol, opBuilder.getUnitAttr());
     break;
   case spirv::Decoration::SpecId:
