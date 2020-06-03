@@ -762,6 +762,16 @@ static Type getUnaryOpResultType(Builder &builder, Type operandType) {
   return resultType;
 }
 
+static ParseResult parseTernaryOp(OpAsmParser &parser, OperationState &state) {
+  SmallVector<OpAsmParser::OperandType, 3> ops;
+  Type type;
+  return failure(parser.parseOperandList(ops) ||
+                 parser.parseOptionalAttrDict(state.attributes) ||
+                 parser.parseColonType(type) ||
+                 parser.resolveOperands(ops, type, state.operands) ||
+                 parser.addTypeToList(type, state.types));
+}
+
 static ParseResult parseLogicalUnaryOp(OpAsmParser &parser,
                                        OperationState &state) {
   OpAsmParser::OperandType operandInfo;

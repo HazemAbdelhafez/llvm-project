@@ -92,7 +92,11 @@ class SPV_GLSLTernaryOp<string mnemonic, int opcode, Type resultType,
     SPV_ScalarOrVectorOf<resultType>:$result
   );
 
+<<<<<<< Updated upstream
   let parser = [{ return impl::parseOneResultSameOperandTypeOp(parser, result); }];
+=======
+  let parser = [{ return parseTernaryOp(parser, result); }];
+>>>>>>> Stashed changes
 
   let printer = [{ return impl::printOneResultOp(getOperation(), p); }];
 
