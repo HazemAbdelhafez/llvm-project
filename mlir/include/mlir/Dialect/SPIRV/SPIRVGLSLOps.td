@@ -77,6 +77,34 @@ class SPV_GLSLBinaryArithmeticOp<string mnemonic, int opcode, Type type,
                                  list<OpTrait> traits = []> :
   SPV_GLSLBinaryOp<mnemonic, opcode, type, type, traits>;
 
+// Base class for GLSL ternary ops.
+class SPV_GLSLTernaryOp<string mnemonic, int opcode, Type resultType,
+                        Type operandType, list<OpTrait> traits = []> :
+  SPV_GLSLOp<mnemonic, opcode, !listconcat([NoSideEffect], traits)> {
+
+  let arguments = (ins
+    SPV_ScalarOrVectorOf<operandType>:$operand1,
+    SPV_ScalarOrVectorOf<operandType>:$operand2,
+    SPV_ScalarOrVectorOf<operandType>:$operand3
+  );
+
+  let results = (outs
+    SPV_ScalarOrVectorOf<resultType>:$result
+  );
+
+  let parser = [{ return impl::parseOneResultSameOperandTypeOp(parser, result); }];
+
+  let printer = [{ return impl::printOneResultOp(getOperation(), p); }];
+
+  let verifier = [{ return success(); }];
+}
+
+// Base class for GLSL Ternary arithmetic ops where operand types and
+// return type matches.
+class SPV_GLSLTernaryArithmeticOp<string mnemonic, int opcode, Type type,
+                                 list<OpTrait> traits = []> :
+  SPV_GLSLTernaryOp<mnemonic, opcode, type, type, traits>;
+
 // -----
 
 def SPV_GLSLFAbsOp : SPV_GLSLUnaryArithmeticOp<"FAbs", 4, SPV_Float> {
@@ -659,6 +687,36 @@ def SPV_GLSLPowOp : SPV_GLSLBinaryArithmeticOp<"Pow", 26, SPV_Float16or32> {
     ```mlir
     %2 = spv.GLSL.Pow %0, %1 : f32
     %3 = spv.GLSL.Pow %0, %1 : vector<3xf16>
+    ```
+  }];
+}
+
+// -----
+
+def SPV_GLSLFMixOp : SPV_GLSLTernaryArithmeticOp<"FMix", 46, SPV_Float> {
+  let summary = "Return the linear blend of x and y";
+
+  let description = [{
+    Result is the linear blend of x and y, i.e., x * (1-a) + y * a.
+    
+    The operands must all be scalar or vector whose component type
+    is floating-point.
+
+    Result Type and the type of all operands must be the same type.
+    Results are computed per component.
+
+    <!-- End of AutoGen section -->
+    ```
+    float-scalar-vector-type ::= float-type |
+                                 `vector<` integer-literal `x` float-type `>`
+    fmix-op ::= ssa-id `=` `spv.GLSL.Pow` ssa-use `:`
+                  float-scalar-vector-type
+    ```
+    #### Example:
+
+    ```mlir
+    %2 = spv.GLSL.FMix %0, %1, %2 : f32
+    %3 = spv.GLSL.FMix %0, %1, %2 : vector<3xf16>
     ```
   }];
 }
