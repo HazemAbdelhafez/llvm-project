@@ -181,3 +181,27 @@ func @tanvec(%arg0 : vector<3xf16>) -> () {
   %2 = spv.GLSL.Tan %arg0 : vector<3xf16>
   return
 }
+
+// -----
+
+//===----------------------------------------------------------------------===//
+// spv.GLSL.FMix
+//===----------------------------------------------------------------------===//
+
+func @fmix(%arg0 : f32, %arg1 : f32, %arg2 : f32) -> () {
+  // CHECK: spv.GLSL.FMix {{%.*}}, {{%.*}}, {{%.*}} : f32
+  %2 = spv.GLSL.FMix %arg0, %arg1, %arg2 : f32
+  return
+}
+
+func @fmix_64(%arg0 : f64, %arg1 : f64, %arg2 : f64) -> () {
+  // CHECK: spv.GLSL.FMix {{%.*}}, {{%.*}}, {{%.*}} : f64
+  %2 = spv.GLSL.FMix %arg0, %arg1, %arg2 : f64
+  return
+}
+
+func @fmix_vec(%arg0 : vector<3xf32>, %arg1 : vector<3xf32>, %arg2 : vector<3xf32>) -> () {
+  // CHECK: spv.GLSL.FMix {{%.*}}, {{%.*}}, {{%.*}} : vector<3xf32>
+  %2 = spv.GLSL.FMix %arg0, %arg1, %arg2 : vector<3xf32>
+  return
+}
