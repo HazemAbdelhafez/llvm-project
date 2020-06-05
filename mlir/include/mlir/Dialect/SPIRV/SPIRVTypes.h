@@ -276,22 +276,30 @@ class StructType : public Type::TypeBase<StructType, CompositeType,
 public:
   using Base::Base;
 
-  // Layout information used for members in a struct in SPIR-V
-  //
-  // TODO(ravishankarm) : For now this only supports the offset type, so uses
-  // uint64_t value to represent the offset, with
-  // std::numeric_limit<uint64_t>::max indicating no offset. Change this to
-  // something that can hold all the information needed for different member
-  // types
-  using LayoutInfo = uint64_t;
+  using OffsetInfo = uint32_t;
 
-  using MemberDecorationInfo = std::pair<uint32_t, spirv::Decoration>;
+  struct MemberDecorationInfo {
+    uint32_t memberIndex : 31;
+    Decoration decoration;
+    uint32_t decorationValue;
+    uint32_t hasValue : 1;
+    inline bool operator==(const MemberDecorationInfo &other) const {
+      return (this->memberIndex == other.memberIndex) &&
+             (this->decoration == other.decoration) &&
+             (this->decorationValue == other.decorationValue);
+    }
+    inline bool operator<(const MemberDecorationInfo &other) const {
+      return this->memberIndex < other.memberIndex ||
+             (this->memberIndex == other.memberIndex &&
+              this->decoration < other.decoration);
+    }
+  };
 
   static bool kindof(unsigned kind) { return kind == TypeKind::Struct; }
 
   /// Construct a StructType with at least one member.
   static StructType get(ArrayRef<Type> memberTypes,
-                        ArrayRef<LayoutInfo> layoutInfo = {},
+                        ArrayRef<OffsetInfo> offsetInfo = {},
                         ArrayRef<MemberDecorationInfo> memberDecorations = {});
 
   /// Construct a struct with no members.
@@ -323,9 +331,9 @@ public:
 
   ElementTypeRange getElementTypes() const;
 
-  bool hasLayout() const;
+  bool hasOffset() const;
 
-  uint64_t getOffset(unsigned) const;
+  uint64_t getMemberOffset(unsigned) const;
 
   // Returns in `allMemberDecorations` the spirv::Decorations (apart from
   // Offset) associated with all members of the StructType.
@@ -334,14 +342,17 @@ public:
 
   // Returns in `memberDecorations` all the spirv::Decorations (apart from
   // Offset) associated with the `i`-th member of the StructType.
-  void getMemberDecorations(
-      unsigned i, SmallVectorImpl<spirv::Decoration> &memberDecorations) const;
+  void getMemberDecorations(unsigned i,
+                            SmallVectorImpl<StructType::MemberDecorationInfo>
+                                &memberDecorations) const;
 
   void getExtensions(SPIRVType::ExtensionArrayRefVector &extensions,
                      Optional<spirv::StorageClass> storage = llvm::None);
   void getCapabilities(SPIRVType::CapabilityArrayRefVector &capabilities,
                        Optional<spirv::StorageClass> storage = llvm::None);
 };
+
+llvm::hash_code hash_value(const StructType::MemberDecorationInfo &f);
 
 // SPIR-V cooperative matrix type
 class CooperativeMatrixNVType
