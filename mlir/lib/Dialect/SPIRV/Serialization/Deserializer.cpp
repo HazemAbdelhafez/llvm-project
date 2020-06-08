@@ -1325,10 +1325,11 @@ LogicalResult Deserializer::processStructType(ArrayRef<uint32_t> operands) {
                   spirv::StructType::MemberDecorationInfo(
                       {memberIndex, memberDecoration.first,
                        memberDecoration.second[0], 1}));
-            } else
+            } else {
               memberDecorationsInfo.emplace_back(
                   spirv::StructType::MemberDecorationInfo(
                       {memberIndex, memberDecoration.first, 0, 0}));
+            }
           }
         }
       }

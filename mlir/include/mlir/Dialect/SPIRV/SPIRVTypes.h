@@ -279,16 +279,16 @@ public:
   using OffsetInfo = uint32_t;
 
   struct MemberDecorationInfo {
-    uint32_t memberIndex : 31;
+    uint32_t memberIndex;
     Decoration decoration;
     uint32_t decorationValue;
-    uint32_t hasValue : 1;
-    inline bool operator==(const MemberDecorationInfo &other) const {
+    uint32_t hasValue;
+    bool operator==(const MemberDecorationInfo &other) const {
       return (this->memberIndex == other.memberIndex) &&
              (this->decoration == other.decoration) &&
              (this->decorationValue == other.decorationValue);
     }
-    inline bool operator<(const MemberDecorationInfo &other) const {
+    bool operator<(const MemberDecorationInfo &other) const {
       return this->memberIndex < other.memberIndex ||
              (this->memberIndex == other.memberIndex &&
               this->decoration < other.decoration);

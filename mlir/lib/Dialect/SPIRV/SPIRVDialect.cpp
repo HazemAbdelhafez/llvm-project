@@ -706,8 +706,7 @@ static void print(StructType type, DialectAsmPrinter &os) {
       auto eachFn = [&os](spirv::StructType::MemberDecorationInfo decoration) {
         os << stringifyDecoration(decoration.decoration);
         if (decoration.hasValue) {
-          os << "=";
-          os << decoration.decorationValue;
+          os << "=" << decoration.decorationValue;
         }
       };
       llvm::interleaveComma(decorations, os, eachFn);
