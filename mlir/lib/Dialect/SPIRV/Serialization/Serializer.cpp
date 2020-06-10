@@ -229,7 +229,7 @@ private:
   /// Process member decoration
   LogicalResult processMemberDecoration(
       uint32_t structID,
-      spirv::StructType::MemberDecorationInfo memberDecorationInfo);
+      const spirv::StructType::MemberDecorationInfo &memberDecorationInfo);
 
   //===--------------------------------------------------------------------===//
   // Types
@@ -738,7 +738,7 @@ LogicalResult Serializer::processTypeDecoration<spirv::RuntimeArrayType>(
 
 LogicalResult Serializer::processMemberDecoration(
     uint32_t structID,
-    spirv::StructType::MemberDecorationInfo memberDecoration) {
+    const spirv::StructType::MemberDecorationInfo &memberDecoration) {
   SmallVector<uint32_t, 4> args(
       {structID, memberDecoration.memberIndex,
        static_cast<uint32_t>(memberDecoration.decoration)});

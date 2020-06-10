@@ -276,13 +276,15 @@ class StructType : public Type::TypeBase<StructType, CompositeType,
 public:
   using Base::Base;
 
+  // Type for specifying the offset of the struct members
   using OffsetInfo = uint32_t;
 
+  // Type for specifying the decoration(s) on struct members
   struct MemberDecorationInfo {
-    uint32_t memberIndex;
+    uint32_t memberIndex : 31;
+    uint32_t hasValue : 1;
     Decoration decoration;
     uint32_t decorationValue;
-    uint32_t hasValue;
     bool operator==(const MemberDecorationInfo &other) const {
       return (this->memberIndex == other.memberIndex) &&
              (this->decoration == other.decoration) &&
@@ -352,7 +354,8 @@ public:
                        Optional<spirv::StorageClass> storage = llvm::None);
 };
 
-llvm::hash_code hash_value(const StructType::MemberDecorationInfo &f);
+llvm::hash_code
+hash_value(const StructType::MemberDecorationInfo &memberDecorationInfo);
 
 // SPIR-V cooperative matrix type
 class CooperativeMatrixNVType

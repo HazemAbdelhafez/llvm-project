@@ -1323,12 +1323,12 @@ LogicalResult Deserializer::processStructType(ArrayRef<uint32_t> operands) {
             if (!memberDecoration.second.empty()) {
               memberDecorationsInfo.emplace_back(
                   spirv::StructType::MemberDecorationInfo(
-                      {memberIndex, memberDecoration.first,
-                       memberDecoration.second[0], 1}));
+                      {memberIndex, 1, memberDecoration.first,
+                       memberDecoration.second[0]}));
             } else {
               memberDecorationsInfo.emplace_back(
                   spirv::StructType::MemberDecorationInfo(
-                      {memberIndex, memberDecoration.first, 0, 0}));
+                      {memberIndex, 0, memberDecoration.first, 0}));
             }
           }
         }

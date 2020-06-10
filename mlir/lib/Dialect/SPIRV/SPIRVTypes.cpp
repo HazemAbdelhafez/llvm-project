@@ -1021,8 +1021,10 @@ void StructType::getCapabilities(
     elementType.cast<SPIRVType>().getCapabilities(capabilities, storage);
 }
 
-llvm::hash_code spirv::hash_value(const StructType::MemberDecorationInfo &f) {
-  return llvm::hash_combine(f.memberIndex, f.decoration);
+llvm::hash_code spirv::hash_value(
+    const StructType::MemberDecorationInfo &memberDecorationInfo) {
+  return llvm::hash_combine(memberDecorationInfo.memberIndex,
+                            memberDecorationInfo.decoration);
 }
 
 //===----------------------------------------------------------------------===//

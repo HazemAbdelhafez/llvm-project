@@ -568,7 +568,7 @@ static ParseResult parseStructMemberDecorations(
     if (!memberDecoration)
       return failure();
 
-    // Parse member decoration value if it exists
+    // Parse member decoration value if it exists.
     if (succeeded(parser.parseOptionalEqual())) {
       auto memberDecorationValue =
           parseAndVerifyInteger<uint32_t>(dialect, parser);
@@ -577,12 +577,12 @@ static ParseResult parseStructMemberDecorations(
         return failure();
 
       memberDecorationInfo.emplace_back(spirv::StructType::MemberDecorationInfo(
-          {static_cast<uint32_t>(memberTypes.size() - 1),
-           memberDecoration.getValue(), memberDecorationValue.getValue(), 1}));
+          {static_cast<uint32_t>(memberTypes.size() - 1), 1,
+           memberDecoration.getValue(), memberDecorationValue.getValue()}));
     } else {
       memberDecorationInfo.emplace_back(spirv::StructType::MemberDecorationInfo(
-          {static_cast<uint32_t>(memberTypes.size() - 1),
-           memberDecoration.getValue(), 0, 0}));
+          {static_cast<uint32_t>(memberTypes.size() - 1), 0,
+           memberDecoration.getValue(), 0}));
     }
 
   } while (succeeded(parser.parseOptionalComma()));
