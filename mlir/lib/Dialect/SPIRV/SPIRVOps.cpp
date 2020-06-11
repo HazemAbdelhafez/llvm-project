@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/SPIRV/SPIRVOps.h"
-#include <cublas_v2.h>
 
 #include "mlir/Dialect/SPIRV/ParserUtils.h"
 #include "mlir/Dialect/SPIRV/SPIRVAttributes.h"
