@@ -2994,10 +2994,11 @@ class SignlessOrUnsignedIntOfWidths<list<int> widths> :
 def SPV_IsArrayType : CPred<"$_self.isa<::mlir::spirv::ArrayType>()">;
 def SPV_IsCooperativeMatrixType :
   CPred<"$_self.isa<::mlir::spirv::CooperativeMatrixNVType>()">;
+def SPV_IsMatrixType : CPred<"$_self.isa<::mlir::spirv::MatrixType>()">;
 def SPV_IsPtrType : CPred<"$_self.isa<::mlir::spirv::PointerType>()">;
 def SPV_IsRTArrayType : CPred<"$_self.isa<::mlir::spirv::RuntimeArrayType>()">;
 def SPV_IsStructType : CPred<"$_self.isa<::mlir::spirv::StructType>()">;
-def SPV_IsMatrixType : CPred<"$_self.isa<::mlir::spirv::MatrixType>()">;
+
 
 // See https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#_types
 // for the definition of the following types and type categories.
@@ -3019,12 +3020,12 @@ def SPV_AnyArray : DialectType<SPIRV_Dialect, SPV_IsArrayType,
 def SPV_AnyCooperativeMatrix : DialectType<SPIRV_Dialect,
                                SPV_IsCooperativeMatrixType,
                                "any SPIR-V cooperative matrix type">;
+def SPV_AnyMatrix : DialectType<SPIRV_Dialect, SPV_IsMatrixType,
+                                "any SPIR-V matrix type">;
 def SPV_AnyRTArray : DialectType<SPIRV_Dialect, SPV_IsRTArrayType,
                                  "any SPIR-V runtime array type">;
 def SPV_AnyStruct : DialectType<SPIRV_Dialect, SPV_IsStructType,
                                 "any SPIR-V struct type">;
-def SPV_AnyMatrix : DialectType<SPIRV_Dialect, SPV_IsMatrixType,
-                                "any SPIR-V matrix type">;
 
 def SPV_Numerical : AnyTypeOf<[SPV_Integer, SPV_Float]>;
 def SPV_Scalar : AnyTypeOf<[SPV_Numerical, SPV_Bool]>;

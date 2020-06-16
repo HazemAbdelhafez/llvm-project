@@ -1,4 +1,4 @@
-//===-- SPIRVMatrixOps.td - MLIR SPIR-V Matrix Ops -------*- tablegen -*-===//
+//===-- SPIRVMatrixOps.td - MLIR SPIR-V Matrix Ops ---------*- tablegen -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,20 +15,7 @@
 
 // -----
 
-// Using the default SPV_ArithmeticOp will lead to a default check that all operands are of the same type which
-// is incorrect for the matrix operations, thus it fails. This class 'SPV_ArithmeticMatrixOp' replicates the same logic
-// of 'SPV_ArithmeticOp' but without the 'SameOperandsAndResultType' trait.
-
-class SPV_ArithmeticMatrixOp<string mnemonic, Type type,
-                       list<OpTrait> traits = []> :
-      // Operands type same as result type.
-      SPV_BinaryOp<mnemonic, type, type,
-                   !listconcat(traits,
-                               [NoSideEffect])> {
-
-}
-
-def SPV_MatrixTimesScalarOp : SPV_ArithmeticMatrixOp<"MatrixTimesScalar", SPV_AnyMatrix, []> {
+def SPV_MatrixTimesScalarOp : SPV_Op<"MatrixTimesScalar", []> {
   let summary = "Scale a floating-point matrix.";
 
   let description = [{
@@ -43,7 +30,8 @@ def SPV_MatrixTimesScalarOp : SPV_ArithmeticMatrixOp<"MatrixTimesScalar", SPV_An
     <!-- End of AutoGen section -->
 
     ```
-    matrix-times-scalar-op ::= ssa-id `=` `spv.MatrixTimesScalar` ssa-use, ssa-use `:` matrix-type `,` float-type `->` matrix-type
+    matrix-times-scalar-op ::= ssa-id `=` `spv.MatrixTimesScalar` ssa-use,
+    ssa-use `:` matrix-type `,` float-type `->` matrix-type
 
     ```
 
@@ -51,7 +39,8 @@ def SPV_MatrixTimesScalarOp : SPV_ArithmeticMatrixOp<"MatrixTimesScalar", SPV_An
 
     ```mlir
 
-    %0 = spv.MatrixTimesScalar %matrix, %scalar : !spv.matrix<3 x vector<3xf32>>, f32 -> !spv.matrix<3 x vector<3xf32>>
+    %0 = spv.MatrixTimesScalar %matrix, %scalar :
+    !spv.matrix<3 x vector<3xf32>>, f32 -> !spv.matrix<3 x vector<3xf32>>
 
     ```
   }];
@@ -65,6 +54,8 @@ def SPV_MatrixTimesScalarOp : SPV_ArithmeticMatrixOp<"MatrixTimesScalar", SPV_An
     SPV_AnyMatrix:$result
   );
 
+  // TODO (Hazem): we need just one matrix type given that the input and result
+  // are the same and the scalar's type can be deduced from it.
   let assemblyFormat = [{
     operands attr-dict `:` type($matrix) `,` type($scalar) `->` type($result)
   }];
