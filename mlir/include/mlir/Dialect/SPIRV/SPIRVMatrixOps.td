@@ -12,6 +12,7 @@
 
 #ifndef SPIRV_MATRIX_OPS
 #define SPIRV_MATRIX_OPS
+include "mlir/Interfaces/SideEffectInterfaces.td"
 
 // -----
 
@@ -79,7 +80,7 @@ def SPV_MatrixTimesScalarOp : SPV_Op<"MatrixTimesScalar", []> {
 
 // -----
 
-def SPV_TransposeOp : SPV_Op<"Transpose", []> {
+def SPV_TransposeOp : SPV_Op<"Transpose", [NoSideEffect]> {
   let summary = "Transpose a matrix.";
 
   let description = [{
@@ -128,9 +129,9 @@ def SPV_TransposeOp : SPV_Op<"Transpose", []> {
     operands attr-dict `:` type($matrix) `->` type($result)
   }];
 
+  let hasCanonicalizer = 1;
+
   let verifier = [{ return verifyTranspose(*this); }];
 }
-
-// -----
 
 #endif // SPIRV_MATRIX_OPS

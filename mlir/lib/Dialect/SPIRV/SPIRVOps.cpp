@@ -24,9 +24,12 @@
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/bit.h"
+#include "mlir/IR/PatternMatch.h"
 
 using namespace mlir;
-
+namespace {
+#include "mlir/Dialect/SPIRV/SPIRVOpsOptimization.inc"
+}
 // TODO(antiagainst): generate these strings using ODS.
 static constexpr const char kAlignmentAttrName[] = "alignment";
 static constexpr const char kBranchWeightAttrName[] = "branch_weights";
@@ -2843,6 +2846,11 @@ static LogicalResult verifyTranspose(spirv::TransposeOp op) {
     }
   }
   return success();
+}
+
+void spirv::TransposeOp::getCanonicalizationPatterns(OwningRewritePatternList &results,
+                                            MLIRContext *context) {
+  results.insert<TransposeTransposeOptPattern>(context);
 }
 
 namespace mlir {

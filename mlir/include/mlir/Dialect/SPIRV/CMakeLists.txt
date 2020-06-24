@@ -7,6 +7,12 @@ mlir_tablegen(SPIRVEnums.cpp.inc -gen-enum-defs)
 add_public_tablegen_target(MLIRSPIRVEnumsIncGen)
 add_dependencies(mlir-headers MLIRSPIRVEnumsIncGen)
 
+set(LLVM_TARGET_DEFINITIONS SPIRVOpsOptimization.td)
+mlir_tablegen(SPIRVOpsOptimization.inc -gen-rewriters)
+add_public_tablegen_target(SPIRVOpsOptimizationIncGen)
+add_dependencies(mlir-headers SPIRVOpsOptimizationIncGen)
+
+
 set(LLVM_TARGET_DEFINITIONS SPIRVBase.td)
 mlir_tablegen(SPIRVEnumAvailability.h.inc -gen-spirv-enum-avail-decls)
 mlir_tablegen(SPIRVEnumAvailability.cpp.inc -gen-spirv-enum-avail-defs)
